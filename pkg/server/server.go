@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 	"sync"
 
 	"github.com/TeGeHHaT/sharecoding/pkg/database"
@@ -33,9 +34,21 @@ var liveCodingSessions sync.Map
 
 // SetupRoutes устанавливает маршруты для сервера
 func SetupRoutes(router *gin.Engine, dbHandler database.DBHandler) {
+	// Маршрут для получения sessionID и редиректа
 	router.GET("/", createSession(dbHandler))
+
+	// Маршрут для присоединения к существующей сессии
 	router.GET("/session/:id", joinSession(dbHandler))
+
+	// Маршрут для обработки WebSocket соединения и лайв-кодинга
 	router.GET("/live/:id", liveCoding(dbHandler))
+
+	// Catch-all маршрут для возвращения index.html
+	router.NoRoute(func(c *gin.Context) {
+		filePath := filepath.Join("www", "index.html")
+		log.Println("Serving file:", filePath)
+		c.File(filePath)
+	})
 }
 
 func createSession(dbHandler database.DBHandler) gin.HandlerFunc {
@@ -94,33 +107,33 @@ func liveCoding(dbHandler database.DBHandler) gin.HandlerFunc {
 		sessionInfo, err := dbHandler.GetSessionInfo(sessionID)
 		if err != nil {
 			log.Println(err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get session information"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось получить информацию о сессии"})
 			return
 		}
 
 		sessionDB, err := sql.Open("postgres", sessionInfo.SessionDBURL)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to connect to session database"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось подключиться к базе данных сессии"})
 			return
 		}
 		defer sessionDB.Close()
 
-		// Получаем соединение WebSocket
+		// Преобразование соединения в WebSocket
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upgrade to WebSocket"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось установить соединение по WebSocket"})
 			return
 		}
 		defer conn.Close()
 
-		// Получаем или создаем сессию лайв-кодинга
+		// Загрузка или создание сессии лайв-кодинга
 		session, _ := liveCodingSessions.LoadOrStore(sessionID, &LiveCodingSession{Clients: make(map[*websocket.Conn]struct{})})
 		liveSession := session.(*LiveCodingSession)
 		liveSession.Lock()
 		liveSession.Clients[conn] = struct{}{}
 		liveSession.Unlock()
 
-		// Отправляем текущий код подключенным клиентам
+		// Отправка текущего кода подключенному клиенту
 		err = conn.WriteJSON(gin.H{"code": liveSession.Code})
 		if err != nil {
 			return
@@ -128,22 +141,23 @@ func liveCoding(dbHandler database.DBHandler) gin.HandlerFunc {
 
 		// Обработка сообщений от клиента
 		for {
+			log.Println("test")
 			message := map[string]string{}
 			err := conn.ReadJSON(&message)
 			if err != nil {
 				break
 			}
 
-			// Обновляем код и отправляем его другим подключенным клиентам
+			// Обновление кода и распространение изменений другим подключенным клиентам
 			liveSession.Lock()
 			liveSession.Code = message["code"]
 
-			// Сохраняем код в базе данных
+			// Сохранение кода в базе данных
 			err = saveCodeToDatabase(sessionID, liveSession.Code, sessionDB)
 			if err != nil {
-				// Обработка ошибки сохранения кода
-				fmt.Println("Failed to save code to database:", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save code to database"})
+				fmt.Println("Не удалось сохранить код в базе данных:", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось сохранить код в базе данных"})
+				liveSession.Unlock()
 				return
 			}
 
@@ -157,7 +171,7 @@ func liveCoding(dbHandler database.DBHandler) gin.HandlerFunc {
 			liveSession.Unlock()
 		}
 
-		// Пользователь отключился, удаляем его из списка клиентов
+		// Клиент отключился, удаляем его из списка клиентов
 		liveSession.Lock()
 		delete(liveSession.Clients, conn)
 		liveSession.Unlock()

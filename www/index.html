@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Совместное написание кода</title>
+
+    <!-- Подключение стилей для нашего приложения -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Подключение библиотеки Prism.js и ее темы стилей -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/theme/material-darker.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-material-darker.min.css">
+</head>
+<body>
+
+<div id="code" style="height: 100vh"></div>
+<button onclick="executeQuery()">Выполнить запрос</button>
+
+<div id="output"></div>
+
+<!-- Подключение библиотеки CodeMirror и ее стилей -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/codemirror.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/mode/sql/sql.min.js"></script>
+
+<!-- Подключение основного скрипта -->
+<script src="script.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,48 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    background-color: #2d2d2d; /* Темный фон */
+    color: #d4d4d4; /* Цвет текста */
+}
+
+#container {
+    display: flex;
+    flex-direction: column; /* Изменение настройки flex-direction */
+    flex-grow: 1; /* Этот элемент будет растягиваться на всю доступную высоту */
+    margin: 0;
+}
+
+#code {
+    font-size: 16px; /* Размер шрифта */
+    background-color: #1e1e1e !important; /* Цвет фона для текстового редактора */
+    color: #d4d4d4 !important; /* Цвет текста в редакторе */
+    overflow-y: auto; /* Если редактор превышает высоту, добавляем прокрутку */
+}
+
+button {
+    padding: 10px;
+    font-size: 16px;
+    background-color: #616161; /* Цвет кнопки */
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin: 0; /* Убираем стандартные отступы */
+}
+
+button:hover {
+    background-color: #969696; /* Цвет кнопки при наведении */
+}
+
+#output {
+    height: 60%;
+    padding: 10px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
